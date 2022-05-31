@@ -1,26 +1,76 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Card from './components/Card/Card';
+// Setup
+import { createBoard } from './setup';
+import { shuffleArray } from './utils';
+// Types
+import { CardType } from './setup';
+// Styles
+import { Grid } from './App.styles';
 
-function App() {
+const App = () => {
+  const [cards, setCards] = React.useState<CardType[]>(shuffleArray(createBoard()));
+  const [gameWon, setGameWon] = React.useState(false);
+  const [matchedPairs, setMatchedPairs] = React.useState(0);
+  const [clickedCard, setClickedCard] = React.useState<undefined | CardType>(undefined);
+
+
+  console.log(createBoard())
+
+  React.useEffect(() => {
+    if (matchedPairs === cards.length / 2) {
+      console.log('Game Won!');
+      setGameWon(true);
+    }
+  }, [matchedPairs]);
+
+  const handleCardClick = (currentClickedCard: CardType) => {
+    // Flip the card
+    setCards(prev =>
+      prev.map(card => (card.id === currentClickedCard.id ? { ...card, flipped: true, clickable: false } : card))
+    );
+    // If this is the first card that is flipped
+    // just keep it flipped
+    if (!clickedCard) {
+      setClickedCard({ ...currentClickedCard });
+      return;
+    }
+
+    // If it's a match
+    if (clickedCard.matchingCardId === currentClickedCard.id) {
+      setMatchedPairs(prev => prev + 1);
+      setCards(prev =>
+        prev.map(card =>
+          card.id === clickedCard.id || card.id === currentClickedCard.id ? { ...card, clickable: false } : card
+        )
+      );
+      setClickedCard(undefined);
+      return;
+    }
+
+    // If it's not a matched pair, wait one second and flip them back
+    setTimeout(() => {
+      setCards(prev =>
+        prev.map(card =>
+          card.id === clickedCard.id || card.id === currentClickedCard.id
+            ? { ...card, flipped: false, clickable: true }
+            : card
+        )
+      );
+    }, 1000);
+
+    setClickedCard(undefined);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className='app'>
+      <Grid>
+        {cards.map(card => (
+          <Card key={card.id} card={card} callback={handleCardClick} />
+        ))}
+      </Grid>
     </div>
   );
-}
+};
 
 export default App;
